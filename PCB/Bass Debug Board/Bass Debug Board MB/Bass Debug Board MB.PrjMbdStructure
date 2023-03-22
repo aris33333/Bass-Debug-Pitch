@@ -1,0 +1,4 @@
+Record=DiagramHierarchy|SourceDocument=Bass Debug MB.MbsDoc|Kind=Multi-board Schematic Module|Designator=2|Source=..\Bass Debug Board Panel\Bass DebugBoard Panel\Bass DebugBoard Panel.PrjPcb
+Record=SubProject|SourceDocument=Bass Debug MB.MbsDoc|ProjectPath=..\Bass Debug Board Panel\Bass DebugBoard Panel\Bass DebugBoard Panel.PrjPcb
+Record=DiagramHierarchy|SourceDocument=Bass Debug MB.MbsDoc|Kind=Multi-board Schematic Module|Designator=1|Source=..\Bass Debug Board\Bass Debug Board.PrjPcb
+Record=SubProject|SourceDocument=Bass Debug MB.MbsDoc|ProjectPath=..\Bass Debug Board\Bass Debug Board.PrjPcb
