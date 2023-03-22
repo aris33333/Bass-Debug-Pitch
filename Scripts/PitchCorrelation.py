@@ -16,9 +16,7 @@ class analyzer():
 
     def getData(path):
         data, sr = librosa.load(path)
-        target_sr = sr * 0.8
-        subsamp = librosa.resample(data, sr, target_sr)
-        return subsamp, target_sr
+        return data, sr
 
     def getFreq(data, fs, hopsize):
        
