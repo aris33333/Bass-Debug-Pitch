@@ -20,20 +20,16 @@ class analyzer():
 
     def getFreq(data, fs, hopsize):
        
+       rms = librosa.feature.rms(y=data, hop_length=1)  
+
        f0 = sp.swipe(data, fs, hopsize, min=10, max=1000, otype='f0')
 
-       "getting the size of the array"
-       size = len(f0)
-
        "find total length by muliplying the window width with the size of the array and multiplying it with the sampling period"
-       total_length = (size * hopsize) * (1 / fs)
-
+       total_length = (len(f0) * hopsize) * (1 / fs)
        "creating an array of numberss with fixed windowed sampling intervals"
        time = np.arange(0, total_length, hopsize * (1 / fs))
 
-       rms = librosa.feature.rms(data, frame_length=2048, hop_length=1, center=True)
-
-       f0 = np.where( (1e-5 < rms < 1e-3).all(), 0, f0)
+       f0 = np.where(rms > 10e-5, f0, 0)
 
        return f0, time
     
@@ -67,8 +63,8 @@ class writeData:
         self.data1 = data1
         self.data2 = data2
 
-    def writeFreqCSV(path, data1, data2):
-        data = {'time': data2, 'frequency': data1}
+    def writeData(path, data1, data2):
+        data = {'data1': data2, 'data2': data1}
         df = pd.DataFrame(data)
         df.to_csv(path)
     
@@ -76,34 +72,32 @@ class writeData:
         df = pd.DataFrame(data1)
         df.to_csv(path)
 
-
     
-clean_file = 'sounds/UIMX-855_total_silence.wav'
-output = 'freq.csv'
+clean_file = 'Scripts/sounds/UIMX-855_total_silence.wav'
+output = 'Scripts/freq.csv'
 
-octaver_file = 'sounds/MAIN_OUT.wav'
-output2 = 'octave.csv'
+octaver_file = 'Scripts/sounds/MAIN_OUT_WET.wav'
+output2 = 'Scripts/octave.csv'
 
 octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
 
-clean_freq, time, rms = analyzer.getFreq(clean, sr, 1)
-octave_freq, time2, rms2 = analyzer.getFreq(octave, sr, 1)
+"Args for getFreq method: data, sampling frequency, hopsize"
+clean_freq, time = analyzer.getFreq(clean, sr, 1)
+octave_freq, time2 = analyzer.getFreq(octave, sr, 1)
 
 "True = OCTAVER, False = SYNTH"
 data, time3, clean, dirt, dev, cents = analyzer.process(clean_freq, octave_freq, time, True)
 
 "Raw frequency data"
-writeData.writeFreqCSV(output, clean_freq, octave_freq)
+writeData.writeData(output, clean_freq, octave_freq)
+
 "Pitch Correlation Function Data"
 writeData.writeList(output2, data)
 
-print(rms, rms2)
-
 "Plotting frequency data and the file itself for visualization"
-"""plt.plot(np.linspace(0, len(octave), num=len(octave)), 1000 * octave)
+plt.plot(np.linspace(0, len(octave), num=len(octave)), 1000 * octave)
 plt.plot(np.linspace(0, len(octave_freq), num=len(octave_freq)), octave_freq)
-plt.plot(np.linspace(0, len(rms2), num=len(rms2)), rms2)
 plt.show()
 plt.close()
-"""
+
