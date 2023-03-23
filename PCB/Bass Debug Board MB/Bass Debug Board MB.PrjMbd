@@ -85,6 +85,8 @@ VaultGUID=
 ManagedProjectGUID=
 RevisionGUID=
 ProjectName=Bass Debug Board.PrjPcb
+VaultURL=
+VaultName=
 
 [Document3]
 DocumentPath=Bass Debug MB.MbaDoc
@@ -104,7 +106,7 @@ GenerateClassCluster=0
 DocumentUniqueId=5ff4f61f-2b90-4e83-962d-58ddde928ea9
 
 [Document4]
-DocumentPath=..\Bass Debug Board Panel\Bass DebugBoard Panel\Bass DebugBoard Panel.PrjPcb
+DocumentPath=..\Bass Debug Board Panel\Bass DebugBoard Panel.PrjPcb
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
