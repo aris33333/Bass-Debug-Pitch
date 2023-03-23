@@ -29,7 +29,7 @@ class analyzer():
        "creating an array of numberss with fixed windowed sampling intervals"
        time = np.arange(0, total_length, hopsize * (1 / fs))
 
-       f0 = np.where(rms > 10e-5, f0, 0)
+       f0 = np.where(rms > np.amin(rms), f0, 0)
 
        return f0, time
     
