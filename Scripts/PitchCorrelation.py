@@ -6,32 +6,32 @@ import matplotlib.pyplot as plt
 
 class analyzer():       
 
-    def __init__(self, path, data, fs, hopsize, mode):
-        self.path = path
+    def __init__(self):
         self.data = data
-        self.fs = fs
-        self.hopsize = hopsize
-        "True = OCTAVER, False = SYNTH"
-        self.mode = mode
-
+        
     def getData(path):
         data, sr = librosa.load(path)
         return data, sr
 
-    def getFreq(data, fs, hopsize):
+    def getFreq(data, fs, hopsize, threshold):
        
-       rms = librosa.feature.rms(y=data, hop_length=1)  
+       rms = (librosa.feature.rms(y=data, hop_length=hopsize))  
+       rms = np.array([rms])
 
        f0 = sp.swipe(data, fs, hopsize, min=10, max=1000, otype='f0')
+       f0 = np.array([f0])
 
        "find total length by muliplying the window width with the size of the array and multiplying it with the sampling period"
        total_length = (len(f0) * hopsize) * (1 / fs)
        "creating an array of numberss with fixed windowed sampling intervals"
        time = np.arange(0, total_length, hopsize * (1 / fs))
 
-       f0 = np.where(rms > np.amin(rms), f0, 0)
+       """if (rms > threshold).any(): 
+           f0 = np.zeros_like(f0)
+       else: 
+           f0 = f0"""
 
-       return f0, time
+       return f0, time, rms
     
     def process(clean, dirt, time, mode):
 
@@ -72,7 +72,7 @@ class writeData:
         df = pd.DataFrame(data1)
         df.to_csv(path)
 
-    
+
 clean_file = 'Scripts/sounds/UIMX-855_total_silence.wav'
 output = 'Scripts/freq.csv'
 
@@ -82,9 +82,13 @@ output2 = 'Scripts/octave.csv'
 octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
 
+t_path = 'Scripts/test.csv'
+
 "Args for getFreq method: data, sampling frequency, hopsize"
-clean_freq, time = analyzer.getFreq(clean, sr, 1)
-octave_freq, time2 = analyzer.getFreq(octave, sr, 1)
+clean_freq, time, rms = analyzer.getFreq(clean, sr, 1, 0.00001)
+octave_freq, time2, rms2 = analyzer.getFreq(octave, sr, 1, 0.00001)
+
+writeData.writeData(t_path, time2, rms2)
 
 "True = OCTAVER, False = SYNTH"
 data, time3, clean, dirt, dev, cents = analyzer.process(clean_freq, octave_freq, time, True)
@@ -96,8 +100,8 @@ writeData.writeData(output, clean_freq, octave_freq)
 writeData.writeList(output2, data)
 
 "Plotting frequency data and the file itself for visualization"
-plt.plot(np.linspace(0, len(octave), num=len(octave)), 1000 * octave)
-plt.plot(np.linspace(0, len(octave_freq), num=len(octave_freq)), octave_freq)
+plt.plot(time, 1000 * octave)
+plt.plot(time, octave_freq)
 plt.show()
 plt.close()
 
