@@ -3,6 +3,7 @@ import librosa
 import pysptk as sp
 import pandas as pd
 import matplotlib.pyplot as plt
+import time
 
 class analyzer():       
 
@@ -39,12 +40,8 @@ class analyzer():
        return data, f, time, rms_audio
     
     def subprocessMethod(subprocess_path):
+        pass
         
-        sqr, fs = librosa.load(subprocess_path)
-        max = np.max(sqr)
-        min = np.min(sqr)
-        count = 0 
-    
     def compareTuners(subprocess, f):
         pass
         
