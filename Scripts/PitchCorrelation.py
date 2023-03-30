@@ -65,17 +65,18 @@ class analyzer():
         isOctave = []
         #Setting a flag for unstable values and detecting octave differences
         for i in range(0, len(semi)-1):
+            
             if semi[i] == float('nan'):
                 setFlag.append(-1)
             elif semi[i] == 0:
-                setFlag.append(1)
+                setFlag.append(0)
             elif semi[i+1] - semi[i] != semi[i]:
                 if semi[i] >= semi[i+1] * 0.95 and semi[i] <= semi[i+1] * 1.05:
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
-            #Checking for octave differences within 10% bounds
-            if 0.95 * 12 <= semi[i] <= 1.05 * 12:
+            #Checking for octave differences within 10% bounds and check if there are odd values over an octave
+            if 0.95 * 12 <= semi[i] <= 1.05 * 12 or semi[i] > 12:
                 isOctave.append(1)
             else:
                 isOctave.append(0)
@@ -153,7 +154,7 @@ class analyzer():
         
         if not remOctave:
             plt.plot(time, isOctave)
-            legend.append("Octave Differences")
+            legend.append("Octave and Greater Differences")
         else: pass
         
         plt.legend(legend, loc = "upper right")
@@ -178,8 +179,13 @@ octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
 
 #Args for getFreq method: data, sampling frequency, hopsize, and threshold for gating frequency values
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1, 0.0085)
+#Clean
+clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1, 0.0045)
+#Dirt
 octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.0085)
+
+print(f"Min RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
+print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt")
 
 #True = OCTAVER, False = SYNTH
 processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clean_freq, octave_freq, time, True)
@@ -188,4 +194,4 @@ processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clea
 writeData.writeList(test_output, octave_data)
 writeData.writeList(dir_output, processor_data)
 
-analyzer.plot(time, octave, octave_freq, rms_dirt, semi, flags, isOctave)
+analyzer.plot(time, octave, octave_freq, None, semi, flags, isOctave)
