@@ -9,10 +9,14 @@ class analyzer():
     def __init__(self):
         self.self
         
-    def getData(path):
+    def getData(path, w):
 
         data, sr = librosa.load(path)
-        return data, sr
+        subsampled = []
+        for i in range(0, len(data), w):
+            subsampled.append(np.average(data[i:i+w]))
+        subsampled = np.array(subsampled)    
+        return subsampled, sr
 
     def getFreq(data, fs, hopsize, threshold):
        
@@ -23,7 +27,7 @@ class analyzer():
        rms_audio = np.array(rms_audio)
 
        #Getting frequency values
-       f = sp.swipe(data, fs, hopsize, min=10, max=1000, otype='f0')
+       f = sp.swipe(data, fs, hopsize, min=10, max=5000, otype='f0')
        #Gating frequency values to remove unecessary frequency data when there is a silence
        f = np.where(rms_audio >= threshold, f, 0)
 
@@ -38,11 +42,26 @@ class analyzer():
        
        return data, f, time, rms_audio
     
-    def subprocessMethod(subprocess_path, hopsize):
+    def subprocessMethod(subprocess_path, w):
         data, fs = librosa.load(subprocess_path)
+        ctr = 0
+        rst = False
+        subsampled = []
+        for i in range(0, len(data), w):
+            subsampled = np.average(data[i:i+w])
+        subsampled = np.array(subsampled)
         
-        
-    def compareTuners(subprocess, f):
+        for j in range(0, len(subsampled)):
+            if rst is False: 
+                    if (subsampled[j] * subsampled[j+1] < 0):
+                        rst = True
+                        ctr = 0
+                    else:
+                        ctr += ctr
+        f = (1/ctr) * (1/fs) 
+        return f
+
+    def compareTuners(sub, f):
         pass
         
     def process(clean, dirt, time, mode):
@@ -74,7 +93,7 @@ class analyzer():
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
-            #Checking for octave differences within 10% bounds and check if there are odd values over an octave
+            #Checking for octave differences within bounds and check if there are values over an octave
             if 0.95 * 12 <= semi[i] <= 1.05 * 12 or semi[i] > 12:
                 isOctave.append(1)
             else:
@@ -92,7 +111,7 @@ class analyzer():
 
         return data, time, clean, dirt, semi, setFlag, isOctave
     
-    def plot(time, signal, f=None, rms_audio=None, dev=None, flags=None, isOctave=None):
+    def plot(time, signal, f=None, sub=None, rms_audio=None, dev=None, flags=None, isOctave=None):
         
         #Scaling data and setting default so data can be plotted if other values are omitted
         signal = signal * 1000
@@ -102,6 +121,7 @@ class analyzer():
         remRMS = False
         remF = False
         remDev = False
+        remSub = False
         
         if flags is None:
             remFlags = True
@@ -118,6 +138,10 @@ class analyzer():
         if rms_audio is None:
             remRMS = True
         else: rms_audio = rms_audio * 1000
+        
+        if sub is None:
+            remSub = True
+        else: sub
             
         if f is None:
             remF = True
@@ -156,11 +180,17 @@ class analyzer():
             legend.append("Octave and Greater Differences")
         else: pass
         
+        if not remSub:
+            plt.plot(time, sub)
+            legend.append("Sub Combined Frequency")
+        else: pass
+        
         plt.legend(legend, loc = "upper right")
         plt.show()
         plt.close()
 
 class writeData:
+    
     def __init__(self):
         self.self
     
@@ -170,18 +200,20 @@ class writeData:
 
 clean_file = 'sounds/UIMX-862_peak_cleaner_dirty_transients.wav'
 octaver_file = 'sounds/MAIN_OUT.wav'
+sub_file = 'sounds/SUB_COMBINED_peak_cleaner.wav'
 
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
-octave, sr = analyzer.getData(octaver_file)
-clean, sr = analyzer.getData(clean_file)
+octave, sr = analyzer.getData(octaver_file, 16)
+clean, sr = analyzer.getData(clean_file, 16)
+sub_freq = analyzer.subprocessMethod(sub_file, 16)
 
 #Args for getFreq method: data, sampling frequency, hopsize, and threshold for gating frequency values
 #Clean
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1, 0.0045)
+clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.00000005)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.0085)
+octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.00000005)
 
 print(f"Min RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
 print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt")
@@ -193,4 +225,4 @@ processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clea
 writeData.writeList(test_output, octave_data)
 writeData.writeList(dir_output, processor_data)
 
-analyzer.plot(time, octave, octave_freq, None, semi, flags, isOctave)
+analyzer.plot(time, octave, octave_freq, sub_freq, None, semi, flags, isOctave)
