@@ -13,13 +13,12 @@ def ACF(f, W, t, lag):
     )
 
 def DF(f, W, t, lag):
-    return ACF(f, W, t, 0) + ACF(f, W,t + lag, 0) - (2 * ACF(f, W, t, lag))
+    return ACF(f, W, t, 0) + ACF(f, W, t + lag, 0) - (2 * ACF(f, W, t, lag))
 
 def CMNDF(f, W, t, lag):
     if lag == 0:
         return 1
     return DF(f, W, t, lag) / np.sum([DF(f, W, t, j+1) for j in range(lag)]) * lag
-
 
 def detect_pitch(f, W, t, fs, bounds, thresh = 0.1):
     CMNDF_vals = [CMNDF(f, W, t, i) for i in range(*bounds)]

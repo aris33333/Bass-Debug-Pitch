@@ -3,7 +3,6 @@ import librosa
 import pysptk as sp
 import pandas as pd
 import matplotlib.pyplot as plt
-import time
 
 class analyzer():       
 
@@ -39,8 +38,9 @@ class analyzer():
        
        return data, f, time, rms_audio
     
-    def subprocessMethod(subprocess_path):
-        pass
+    def subprocessMethod(subprocess_path, hopsize):
+        data, fs = librosa.load(subprocess_path)
+        
         
     def compareTuners(subprocess, f):
         pass
@@ -65,7 +65,6 @@ class analyzer():
         isOctave = []
         #Setting a flag for unstable values and detecting octave differences
         for i in range(0, len(semi)-1):
-            
             if semi[i] == float('nan'):
                 setFlag.append(-1)
             elif semi[i] == 0:

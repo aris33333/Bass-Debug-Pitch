@@ -65,6 +65,23 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=CTDWOFNW
 
+[Document2]
+DocumentPath=Managed\OutputJobs\6EE8C32A-3EFA-44FE-8BCA-C7B251E96F1A\OUT-FAB-13.OutJob
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0
@@ -1054,4 +1071,19 @@ ComparisonOptions5=Kind=Structure Class|MinPercent=75|MinMatch=3|ShowMatch=0|Use
 
 [SmartPDF]
 PageOptions=Record=PageOptions|CenterHorizontal=True|CenterVertical=True|PrintScale=1.00|XCorrection=1.00|YCorrection=1.00|PrintKind=1|BorderSize=5000000|LeftOffset=0|BottomOffset=0|Orientation=2|PaperLength=1000|PaperWidth=1000|Scale=100|PaperSource=7|PrintQuality=-3|MediaType=1|DitherType=10|PrintScaleMode=1|PaperKind=A4|PaperIndex=9
+
+[ManagedOutputJobs1]
+VaultGUID=c8a60b5b-31d0-42a9-bda1-6c263813662f
+VaultHRID=Darkglass Electronics
+ItemGUID=CD3A9FE4-8991-473E-8CF9-53BFD30345D4
+ItemHRID=OUT-FAB
+RevisionGUID=6EE8C32A-3EFA-44FE-8BCA-C7B251E96F1A
+RevisionHRID=OUT-FAB-13
+Cached_RevisionCaption=Fabrication Outjob
+Cached_RevisionDescription=For Project Releaser
+Cached_LifeCycleStateHRID=New From Design
+Cached_LifeCycleStateGUID=[Unknown]
+Cached_LifeCycleStateColor=F0FAFF
+Cached_LifeCycleStateTextColor=000000
+Cached_RevisionReleaseDate=18/08/2020 14.41.16
 
