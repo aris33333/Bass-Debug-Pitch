@@ -43,10 +43,12 @@ class analyzer():
        return data, f, time, rms_audio
     
     def subprocessMethod(subprocess_path, w):
+        
         data, fs = librosa.load(subprocess_path)
         ctr = 0
         rst = False
         subsampled = []
+        
         for i in range(0, len(data), w):
             subsampled = np.average(data[i:i+w])
         subsampled = np.array(subsampled)
