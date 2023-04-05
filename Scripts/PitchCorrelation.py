@@ -10,16 +10,18 @@ class analyzer():
         self.self
         
     def getData(path, w):
-
         data, sr = librosa.load(path)
+        #Audio can be subsampled, by avereraging it with a window of W
         subsampled = []
-        for i in range(0, len(data), w):
-            subsampled.append(np.average(data[i:i+w]))
-        subsampled = np.array(subsampled)    
-        return subsampled, sr
+        if w == 0:
+            return data, sr
+        else:
+            for i in range(0, len(data), w):
+                subsampled.append(np.mean(data[i:i+w]))
+            subsampled = np.array(subsampled)    
+            return subsampled, sr
 
-    def getFreq(data, fs, hopsize, threshold):
-       
+    def getFreq(data, fs, hopsize, threshold=None):
        #Finding RMS energy of each sample
        rms_audio = librosa.feature.rms(y = data, hop_length = hopsize) 
        rms_audio = rms_audio.flatten().tolist()
@@ -28,8 +30,10 @@ class analyzer():
 
        #Getting frequency values
        f = sp.swipe(data, fs, hopsize, min=10, max=5000, otype='f0')
+       if threshold is not None:
        #Gating frequency values to remove unecessary frequency data when there is a silence
-       f = np.where(rms_audio >= threshold, f, 0)
+            f = np.where(rms_audio >= threshold, f, 0)
+       else: f
 
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
        total_length = (len(f) * hopsize) * (1 / fs)
@@ -43,24 +47,32 @@ class analyzer():
        return data, f, time, rms_audio
     
     def subprocessMethod(subprocess_path, w):
-        
+        #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
+        #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
         ctr = 0
         f = []
         store = 0
+        #When a product of a sample is negative then the signal must have a sign change, which is when the counter (number of samples before sign change) is reset to 0 and a new count starts.
+        #So, to get the period of a full cycle the counter must be halved. Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
-                store = fs/ctr
+                store = (fs/ctr)/2
                 ctr = 0
             else:
                 ctr += 1 
             f.append(store)
+        f.append(f[len(f)-1])
 
         averaged = []
-        for i in range(0, len(f)):
-            averaged.append(np.average(f[i:i+w]))
-        averaged = np.array(averaged)        
-        return averaged
+        if w == 0:
+            f = np.array(f)
+            return f
+        else:
+            for i in range(0, len(f), w):
+                averaged.append(np.mean(f[i:i+w]))
+            averaged = np.array(averaged)       
+            return averaged
 
     def compareTuners(sub, f):
         pass
@@ -69,12 +81,12 @@ class analyzer():
 
         #Mode if true processes clean as ideal octave values. Mode if false doesn't do anything to the clean signal frequencies
         if mode: 
-            clean = clean / 2
+            clean = clean/2
         elif not mode:
             clean = clean
 
         #Calculate pitch deviation from ideal values
-        semi = (12 * np.log2(dirt / clean))
+        semi = (12 * np.log2(dirt/clean))
 
         #Remove values that are -inf/inf
         semi = np.where( semi != float('inf'), semi, 0) 
@@ -206,24 +218,27 @@ sub_file = 'sounds/SUB_COMBINED_peak_cleaner.wav'
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
-octave, sr = analyzer.getData(octaver_file, 16)
-clean, sr = analyzer.getData(clean_file, 16)
-sub_freq = analyzer.subprocessMethod(sub_file, 16)
+#Args: File path, averaging window width
+octave, sr = analyzer.getData(octaver_file, 0)
+clean, sr = analyzer.getData(clean_file, 0)
+sub_freq = analyzer.subprocessMethod(sub_file, 0)
 
-#Args for getFreq method: data, sampling frequency, hopsize, and threshold for gating frequency values
+#Args: data, sampling frequency, hopsize, and threshold for gating
 #Clean
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.00000005)
+clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  None)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.00000005)
+octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, None)
 
-print(f"Min RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
-print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt")
+#Debug data for tuning the gate
+
+print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
+print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt\n")
 
 #True = OCTAVER, False = SYNTH
 processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clean_freq, octave_freq, time, True)
 
-#Pitch Correlation Function and Frequency Data
-writeData.writeList(test_output, octave_data)
-writeData.writeList(dir_output, processor_data)
+#Pitch Correlation Function and Frequency Data to CSV
+#writeData.writeList(test_output, octave_data)
+#writeData.writeList(dir_output, processor_data)
 
 analyzer.plot(time, octave, octave_freq, sub_freq, None, semi, flags, isOctave)
