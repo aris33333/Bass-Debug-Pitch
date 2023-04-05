@@ -46,22 +46,21 @@ class analyzer():
         
         data, fs = librosa.load(subprocess_path)
         ctr = 0
-        rst = False
-        subsampled = []
-        
-        for i in range(0, len(data), w):
-            subsampled = np.average(data[i:i+w])
-        subsampled = np.array(subsampled)
-        
-        for j in range(0, len(subsampled)):
-            if rst is False: 
-                    if (subsampled[j] * subsampled[j+1] < 0):
-                        rst = True
-                        ctr = 0
-                    else:
-                        ctr += ctr
-        f = (1/ctr) * (1/fs) 
-        return f
+        f = []
+        store = 0
+        for j in range(1, len(data)):
+            if (data[j] * data[j-1] < 0):
+                store = fs/ctr
+                ctr = 0
+            else:
+                ctr += 1 
+            f.append(store)
+
+        averaged = []
+        for i in range(0, len(f)):
+            averaged.append(np.average(f[i:i+w]))
+        averaged = np.array(averaged)        
+        return averaged
 
     def compareTuners(sub, f):
         pass
