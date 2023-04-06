@@ -33,6 +33,7 @@ class analyzer():
        if threshold is not None:
        #Gating frequency values to remove unecessary frequency data when there is a silence
             f = np.where(rms_audio >= threshold, f, 0)
+            f = np.where(rms_audio <= threshold * 0.8, 0, f)
        else: f
 
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
@@ -54,28 +55,26 @@ class analyzer():
         f = []
         store = 0
         #When a product of a sample is negative then the signal must have a sign change, which is when the counter (number of samples before sign change) is reset to 0 and a new count starts.
-        #So, to get the period of a full cycle the counter must be halved. Dividing it with the sampling frequency gives the estimated fundamental frequency.
+        #Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
-                store = (fs/ctr)
+                if ctr != 1:
+                    store = (fs/ctr)
+                else:
+                    store = 0
                 ctr = 0
             else:
                 ctr += 1 
             f.append(store)
-        f.append(f[len(f)-1])
-
-        averaged = []
+        f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
+        
         if w is None:
-            f = np.array(f)
-            return f
+            return np.array(f)
         else:
+            averaged = []
             for i in range(0, len(f), w):
                 averaged.append(np.mean(f[i:i+w]))
-            averaged = np.array(averaged)       
-            return averaged
-
-    def compareTuners(sub, f):
-        pass
+            return np.array(averaged)
         
     def process(clean, dirt, time, mode):
         #Mode if true processes clean as ideal octave values. Mode if false doesn't do anything to the clean signal frequencies
@@ -219,15 +218,15 @@ test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
 #Args: File path, averaging window width. If none, no subsampling takes place.
-octave, sr = analyzer.getData(octaver_file, 4)
-clean, sr = analyzer.getData(clean_file, 4)
-sub_freq = analyzer.subprocessMethod(sub_file, 4)
+octave, sr = analyzer.getData(octaver_file, 2)
+clean, sr = analyzer.getData(clean_file, 2)
+sub_freq = analyzer.subprocessMethod(sub_file, 2)
 
 #Args: data, sampling frequency, hopsize, and threshold for gating. If none, no gating takes place.
 #Clean
 clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.009)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.003)
+octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.009)
 
 #Debug data for tuning the gate
 print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
@@ -241,5 +240,5 @@ processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clea
 #writeData.writeList(test_output, octave_data)
 #writeData.writeList(dir_output, processor_data)
 
-#Args: time, audio signal, audio freq, subprocess freq, deviation, flags, octave errors. Use None for omitting data (cannot omit audio and time).
-analyzer.plot(time, octave, octave_freq, sub_freq, rms_clean, semi, flags, isOctave)
+#Args: time, audio signal, audio freq, subprocess freq, audio rms, deviation, flags, octave errors. Use None for omitting data (cannot omit audio and time).
+analyzer.plot(time, octave, octave_freq, sub_freq, None, None, None, None)
