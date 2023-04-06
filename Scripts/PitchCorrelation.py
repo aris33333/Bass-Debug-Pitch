@@ -9,11 +9,11 @@ class analyzer():
     def __init__(self):
         self.self
         
-    def getData(path, w):
+    def getData(path, w=None):
         data, sr = librosa.load(path)
         #Audio can be subsampled, by avereraging it with a window of W
         subsampled = []
-        if w == 0:
+        if w is None:
             return data, sr
         else:
             for i in range(0, len(data), w):
@@ -46,7 +46,7 @@ class analyzer():
        
        return data, f, time, rms_audio
     
-    def subprocessMethod(subprocess_path, w):
+    def subprocessMethod(subprocess_path, w=None):
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
@@ -57,7 +57,7 @@ class analyzer():
         #So, to get the period of a full cycle the counter must be halved. Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
-                store = (fs/ctr)/2
+                store = (fs/ctr)
                 ctr = 0
             else:
                 ctr += 1 
@@ -65,7 +65,7 @@ class analyzer():
         f.append(f[len(f)-1])
 
         averaged = []
-        if w == 0:
+        if w is None:
             f = np.array(f)
             return f
         else:
@@ -211,28 +211,29 @@ class writeData:
         
 #Paths
 #Audio
-clean_file = 'sounds/UIMX-862_peak_cleaner_dirty_transients.wav'
-octaver_file = 'sounds/MAIN_OUT.wav'
-sub_file = 'sounds/SUB_COMBINED_peak_cleaner.wav'
+clean_file = 'sounds/UIMX-855_total_silence.wav'
+octaver_file = 'sounds/MAIN_OUT_WET.wav'
+sub_file = 'sounds/SUB_COMBINED_total_silence.wav'
 #CSV
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
-#Args: File path, averaging window width
-octave, sr = analyzer.getData(octaver_file, 0)
-clean, sr = analyzer.getData(clean_file, 0)
-sub_freq = analyzer.subprocessMethod(sub_file, 0)
+#Args: File path, averaging window width. If none, no subsampling takes place.
+octave, sr = analyzer.getData(octaver_file, 4)
+clean, sr = analyzer.getData(clean_file, 4)
+sub_freq = analyzer.subprocessMethod(sub_file, 4)
 
-#Args: data, sampling frequency, hopsize, and threshold for gating
+#Args: data, sampling frequency, hopsize, and threshold for gating. If none, no gating takes place.
 #Clean
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  None)
+clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.009)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, None)
+octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.003)
 
 #Debug data for tuning the gate
 print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
 print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt\n")
 
+#Args: Clean Freq, Dirt Freq,
 #True = OCTAVER, False = SYNTH
 processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clean_freq, octave_freq, time, True)
 
@@ -241,4 +242,4 @@ processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clea
 #writeData.writeList(dir_output, processor_data)
 
 #Args: time, audio signal, audio freq, subprocess freq, deviation, flags, octave errors. Use None for omitting data (cannot omit audio and time).
-analyzer.plot(time, octave, octave_freq, sub_freq, None, semi, flags, isOctave)
+analyzer.plot(time, octave, octave_freq, sub_freq, rms_clean, semi, flags, isOctave)
