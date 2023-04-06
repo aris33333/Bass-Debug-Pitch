@@ -78,7 +78,6 @@ class analyzer():
         pass
         
     def process(clean, dirt, time, mode):
-
         #Mode if true processes clean as ideal octave values. Mode if false doesn't do anything to the clean signal frequencies
         if mode: 
             clean = clean/2
@@ -125,7 +124,6 @@ class analyzer():
         return data, time, clean, dirt, semi, setFlag, isOctave
     
     def plot(time, signal, f=None, sub=None, rms_audio=None, dev=None, flags=None, isOctave=None):
-        
         #Scaling data and setting default so data can be plotted if other values are omitted
         signal = signal * 1000
         
@@ -210,11 +208,13 @@ class writeData:
     def writeList(path, data):
         df = pd.DataFrame(data)
         df.to_csv(path)
-
+        
+#Paths
+#Audio
 clean_file = 'sounds/UIMX-862_peak_cleaner_dirty_transients.wav'
 octaver_file = 'sounds/MAIN_OUT.wav'
 sub_file = 'sounds/SUB_COMBINED_peak_cleaner.wav'
-
+#CSV
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
@@ -230,7 +230,6 @@ clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  None)
 octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, None)
 
 #Debug data for tuning the gate
-
 print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
 print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt\n")
 
@@ -241,4 +240,5 @@ processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clea
 #writeData.writeList(test_output, octave_data)
 #writeData.writeList(dir_output, processor_data)
 
+#Args: time, audio signal, audio freq, subprocess freq, deviation, flags, octave errors. Use None for omitting data (cannot omit audio and time).
 analyzer.plot(time, octave, octave_freq, sub_freq, None, semi, flags, isOctave)
