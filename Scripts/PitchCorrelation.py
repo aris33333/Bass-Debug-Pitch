@@ -6,11 +6,14 @@ import matplotlib.pyplot as plt
 
 class analyzer():       
 
-    def __init__(self):
+    def __init__(self, hopsize, threshold):
         self.self
+        self.hopsize
+        self.threshold
         
     def getData(path, w=None):
         data, sr = librosa.load(path)
+
         #Audio can be subsampled, by avereraging it with a window of W
         subsampled = []
         if w is None:
@@ -31,13 +34,17 @@ class analyzer():
        #Getting frequency values
        f = sp.swipe(data, fs, hopsize, min=10, max=5000, otype='f0')
        if threshold is not None:
+
        #Gating frequency values to remove unecessary frequency data when there is a silence
-            f = np.where(rms_audio >= threshold, f, 0)
-            f = np.where(rms_audio <= threshold * 0.8, 0, f)
+        f = np.where(rms_audio >= threshold, f, 0)
+        for i in range(1, len(f)):
+            np.where(f[i-1] > 2.2 * f[i], 0, f)
+        #f[len(f)-1] = f[len(f)]
        else: f
 
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
        total_length = (len(f) * hopsize) * (1 / fs)
+
        #Creating an array of numberss with fixed windowed sampling intervals
        time = np.arange(0, total_length, hopsize * (1 / fs))
 
@@ -54,6 +61,7 @@ class analyzer():
         ctr = 0
         f = []
         store = 0
+        
         #When a product of a sample is negative then the signal must have a sign change, which is when the counter (number of samples before sign change) is reset to 0 and a new count starts.
         #Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
@@ -93,6 +101,7 @@ class analyzer():
         
         setFlag = []
         isOctave = []
+
         #Setting a flag for unstable values and detecting octave differences
         for i in range(0, len(semi)-1):
             if semi[i] == float('nan'):
@@ -104,6 +113,7 @@ class analyzer():
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
+
             #Checking for octave differences within bounds and check if there are values over an octave
             if 0.95 * 12 <= semi[i] <= 1.05 * 12 or semi[i] > 12:
                 isOctave.append(1)
@@ -210,10 +220,12 @@ class writeData:
         
 #Paths
 #Audio
+
 clean_file = 'sounds/UIMX-855_total_silence.wav'
 octaver_file = 'sounds/MAIN_OUT_WET.wav'
 sub_file = 'sounds/SUB_COMBINED_total_silence.wav'
 #CSV
+
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
@@ -224,9 +236,9 @@ sub_freq = analyzer.subprocessMethod(sub_file, 2)
 
 #Args: data, sampling frequency, hopsize, and threshold for gating. If none, no gating takes place.
 #Clean
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.009)
+clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.00025)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.009)
+octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.0025)
 
 #Debug data for tuning the gate
 print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
