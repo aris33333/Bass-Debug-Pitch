@@ -6,55 +6,54 @@ import matplotlib.pyplot as plt
 
 class analyzer():       
 
-    def __init__(self, hopsize, threshold):
-        self.self
-        self.hopsize
-        self.threshold
-        
-    def getData(path, w=None):
+    def __init__(self, window=None, threshold=None, hopsize=None):
+        self.window = window
+        self.threshold = threshold
+        self.hopsize = hopsize
+
+    def getData(self, path):
         data, sr = librosa.load(path)
 
         #Audio can be subsampled, by avereraging it with a window of W
         subsampled = []
-        if w is None:
+        if self.window is None:
             return data, sr
         else:
-            for i in range(0, len(data), w):
-                subsampled.append(np.mean(data[i:i+w]))
-            subsampled = np.array(subsampled)    
-            return subsampled, sr
+            for i in range(0, len(data), self.window):
+                subsampled.append(np.mean(data[i:i+self.window]))  
+            return np.array(subsampled), sr
 
-    def getFreq(data, fs, hopsize, threshold=None):
-       #Finding RMS energy of each sample
-       rms_audio = librosa.feature.rms(y = data, hop_length = hopsize) 
-       rms_audio = rms_audio.flatten().tolist()
-       rms_audio.pop()
-       rms_audio = np.array(rms_audio)
+    def getFreq(self, data, fs):
+        
+       # Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
+       non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
+
+       # Create a binary mask to nullify the silent parts
+       mask = np.zeros_like(data, dtype=bool)
+       for interval in non_silent_intervals:
+            start = interval[0]
+            end = interval[1]
+            mask[start:end] = True
 
        #Getting frequency values
-       f = sp.swipe(data, fs, hopsize, min=10, max=5000, otype='f0')
-       if threshold is not None:
-
-       #Gating frequency values to remove unecessary frequency data when there is a silence
-        f = np.where(rms_audio >= threshold, f, 0)
-        for i in range(1, len(f)):
-            np.where(f[i-1] > 2.2 * f[i], 0, f)
-        #f[len(f)-1] = f[len(f)]
+       f = sp.swipe(data, fs, self.hopsize, min=10, max=5000, otype='f0')
+       #Applying the mask
+       if self.threshold is not None:
+             f = f * mask
        else: f
 
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
-       total_length = (len(f) * hopsize) * (1 / fs)
+       total_length = (len(f) * self.hopsize) * (1 / fs)
 
        #Creating an array of numberss with fixed windowed sampling intervals
-       time = np.arange(0, total_length, hopsize * (1 / fs))
+       time = np.arange(0, total_length, self.hopsize * (1 / fs))
 
        data = {'f0': f, 
-               'Time': time,
-               'RMS': rms_audio}
+               'Time': time}
        
-       return data, f, time, rms_audio
+       return data, f, time
     
-    def subprocessMethod(subprocess_path, w=None):
+    def subProcess(self, subprocess_path):
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
@@ -66,7 +65,7 @@ class analyzer():
         #Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
-                if ctr != 1:
+                if ctr > 1:
                     store = (fs/ctr)
                 else:
                     store = 0
@@ -76,15 +75,15 @@ class analyzer():
             f.append(store)
         f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
         
-        if w is None:
+        if self.window is None:
             return np.array(f)
         else:
             averaged = []
-            for i in range(0, len(f), w):
-                averaged.append(np.mean(f[i:i+w]))
+            for i in range(0, len(f), self.window):
+                averaged.append(np.mean(f[i:i+self.window]))
             return np.array(averaged)
         
-    def process(clean, dirt, time, mode):
+    def processDiff(self, clean, dirt, time, mode):
         #Mode if true processes clean as ideal octave values. Mode if false doesn't do anything to the clean signal frequencies
         if mode: 
             clean = clean/2
@@ -130,15 +129,15 @@ class analyzer():
                 'isStable': setFlag,
                 'isOctave': isOctave}
 
-        return data, time, clean, dirt, semi, setFlag, isOctave
+        return data, semi, setFlag, isOctave
     
-    def plot(time, signal, f=None, sub=None, rms_audio=None, dev=None, flags=None, isOctave=None):
-        #Scaling data and setting default so data can be plotted if other values are omitted
-        signal = signal * 1000
+    def plot(self, time, octave, clean=None, f=None, sub=None, dev=None, flags=None, isOctave=None):
+        #Scaling data and setting defaults so data can be plotted if other values are omitted
+        octave = octave * 10e2
         
         remFlags = False
         remOctave = False
-        remRMS = False
+        remClean = False
         remF = False
         remDev = False
         remSub = False
@@ -147,17 +146,17 @@ class analyzer():
             remFlags = True
         else: 
             for i in range(0, len(time)):
-                flags[i] = 100 + 10 * flags[i]
+                flags[i] = 10 + 10 * flags[i]
                 
         if isOctave is None:
             remOctave = True
         else: 
             for i in range(0, len(time)):
-                isOctave[i] = 100 + 10 * isOctave[i]
+                isOctave[i] = 10 + 10 * isOctave[i]
                 
-        if rms_audio is None:
-            remRMS = True
-        else: rms_audio = rms_audio * 1000
+        if clean is None:
+            remClean = True
+        else: clean
         
         if sub is None:
             remSub = True
@@ -172,45 +171,50 @@ class analyzer():
         else: dev
             
         #Plotting frequency data and the audio clip for visualization
-        plt.plot(time, signal)
-        legend = ["Signal"]
-        
+        fig, ax = plt.subplots(3, sharex=True)
+        fig.suptitle("Data Correlation")
+        ax[0].plot(time, octave)
+        ax[0].set_title("Processed Signal")
+        ax[0].legend(["Clean Signal"], loc = "upper right")
+       
+        legend = []
         if not remF: 
-            plt.plot(time, f) 
+            ax[1].plot(time, f) 
             legend.append("F0")
         else: pass
-        
-        if not remRMS: 
-            plt.plot(time, rms_audio)
-            legend.append("RMS")
-        else: pass
-        
+    
         if not remDev: 
-            plt.plot(time, dev)
+            ax[1].plot(time, dev)
             legend.append("Deviation in Semitones")
         else: pass
         
         if not remFlags:
-            plt.plot(time, flags)
+            ax[1].plot(time, flags)
             legend.append("Flags")
         else: pass
         
         if not remOctave:
-            plt.plot(time, isOctave)
+            ax[1].plot(time, isOctave)
             legend.append("Octave and Greater Differences")
         else: pass
         
         if not remSub:
-            plt.plot(time, sub)
+            ax[1].plot(time, sub)
             legend.append("Sub Combined Frequency")
         else: pass
-        
-        plt.legend(legend, loc = "upper right")
+        ax[1].legend(legend, loc = "upper right")
+        ax[1].set_title("Processed Correlation")
+
+        if not remClean: 
+            ax[2].plot(time, clean)
+            ax[2].legend(["Clean Signal"], loc="upper right")
+            ax[2].set_title("Clean Audio")
+        else: ax[2].set_visible(False)
+
+        plt.tight_layout()
         plt.show()
-        plt.close()
 
 class writeData:
-    
     def __init__(self):
         self.self
     
@@ -220,37 +224,32 @@ class writeData:
         
 #Paths
 #Audio
-
 clean_file = 'sounds/UIMX-855_total_silence.wav'
 octaver_file = 'sounds/MAIN_OUT_WET.wav'
 sub_file = 'sounds/SUB_COMBINED_total_silence.wav'
-#CSV
 
+#CSV
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
-#Args: File path, averaging window width. If none, no subsampling takes place.
-octave, sr = analyzer.getData(octaver_file, 2)
-clean, sr = analyzer.getData(clean_file, 2)
-sub_freq = analyzer.subprocessMethod(sub_file, 2)
+#Args: Averaging Window Wdith, Threshold for Gating, Hopsize. If None: Averaging and Gating can be skipped. 
+#Init Object
+analyzer = analyzer(None, 10, 1)
+#Args: File path
+octave, sr = analyzer.getData(octaver_file)
+clean, sr = analyzer.getData(clean_file)
+sub_freq = analyzer.subProcess(sub_file)
 
-#Args: data, sampling frequency, hopsize, and threshold for gating. If none, no gating takes place.
+#Args: Data, Fs.
 #Clean
-clean_data, clean_freq, time, rms_clean = analyzer.getFreq(clean, sr, 1,  0.00025)
+clean_data, clean_freq, time = analyzer.getFreq(clean, sr)
 #Dirt
-octave_data, octave_freq, time_octave, rms_dirt = analyzer.getFreq(octave, sr, 1, 0.0025)
+octave_data, octave_freq, time_octave = analyzer.getFreq(octave, sr)
 
-#Debug data for tuning the gate
-print(f"\nMin RMS: {np.min(rms_clean)} Max RMS: {np.max(rms_clean)} Mean RMS of the clip: {np.mean(rms_clean)} in Clean")
-print(f"Min RMS: {np.min(rms_dirt)} Max RMS: {np.max(rms_dirt)} Mean RMS of the clip: {np.mean(rms_dirt)} in Dirt\n")
-
-#Args: Clean Freq, Dirt Freq,
+#Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
-processor_data, time, clean, dirt, semi, flags, isOctave = analyzer.process(clean_freq, octave_freq, time, True)
+processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_freq, time, True)
 
-#Pitch Correlation Function and Frequency Data to CSV
-#writeData.writeList(test_output, octave_data)
-#writeData.writeList(dir_output, processor_data)
-
-#Args: time, audio signal, audio freq, subprocess freq, audio rms, deviation, flags, octave errors. Use None for omitting data (cannot omit audio and time).
-analyzer.plot(time, octave, octave_freq, sub_freq, None, None, None, None)
+#Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
+#Use None for omitting data (cannot omit Processed Audio and Time).
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, Flags, isOctave)
