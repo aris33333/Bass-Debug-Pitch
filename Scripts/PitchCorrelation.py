@@ -45,7 +45,7 @@ class analyzer():
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
        total_length = (len(f) * self.hopsize) * (1 / fs)
 
-       #Creating an array of numberss with fixed windowed sampling intervals
+       #Creating an array of numbers with fixed windowed sampling intervals
        time = np.arange(0, total_length, self.hopsize * (1 / fs))
 
        data = {'f0': f, 
@@ -132,9 +132,7 @@ class analyzer():
         return data, semi, setFlag, isOctave
     
     def plot(self, time, octave, clean=None, f=None, sub=None, dev=None, flags=None, isOctave=None):
-        #Scaling data and setting defaults so data can be plotted if other values are omitted
-        octave = octave * 10e2
-        
+        #Scaling data and setting defaults so data can be plotted if other values are omitted   
         remFlags = False
         remOctave = False
         remClean = False
@@ -175,7 +173,8 @@ class analyzer():
         fig.suptitle("Data Correlation")
         ax[0].plot(time, octave)
         ax[0].set_title("Processed Signal")
-        ax[0].legend(["Clean Signal"], loc = "upper right")
+        ax[0].legend(["Octave Signal"], loc = "upper right")
+        ax[0].grid()
        
         legend = []
         if not remF: 
@@ -204,15 +203,20 @@ class analyzer():
         else: pass
         ax[1].legend(legend, loc = "upper right")
         ax[1].set_title("Processed Correlation")
-
+        ax[1].grid()
+        
         if not remClean: 
             ax[2].plot(time, clean)
             ax[2].legend(["Clean Signal"], loc="upper right")
             ax[2].set_title("Clean Audio")
+            ax[2].grid()
         else: ax[2].set_visible(False)
 
         plt.tight_layout()
         plt.show()
+        
+    def spectrum(self, signal, sr):
+        pass
 
 class writeData:
     def __init__(self):
