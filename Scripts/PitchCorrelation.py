@@ -36,7 +36,7 @@ class analyzer():
             mask[start:end] = True
 
        #Getting frequency values
-       f = sp.swipe(data, fs, self.hopsize, min=10, max=5000, otype='f0')
+       f = sp.swipe(data, fs, self.hopsize, min=10, max=600, otype='f0')
        #Applying the mask
        if self.threshold is not None:
              f = f * mask
@@ -53,7 +53,7 @@ class analyzer():
        
        return data, f, time
     
-    def subProcess(self, subprocess_path):
+    def subProcess(self, subprocess_path): #Clean Signal 
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
@@ -66,7 +66,7 @@ class analyzer():
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
                 if ctr > 1:
-                    store = (fs/ctr)
+                    store = (fs/ctr)/2
                 else:
                     store = 0
                 ctr = 0
@@ -252,4 +252,4 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, Flags, isOctave)
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
