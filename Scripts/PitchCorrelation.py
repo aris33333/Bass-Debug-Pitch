@@ -6,15 +6,16 @@ import matplotlib.pyplot as plt
 
 class analyzer():       
 
-    def __init__(self, window=None, threshold=None, hopsize=None):
+    def __init__(self, window=None, threshold=None, hopsize=None, tolerance=None):
         self.window = window
         self.threshold = threshold
         self.hopsize = hopsize
+        self.tolerance = tolerance
 
     def getData(self, path):
         data, sr = librosa.load(path)
 
-        #Audio can be subsampled, by avereraging it with a window of W
+        #Audio can be subsampled, by avereraging it with a window width of W
         subsampled = []
         if self.window is None:
             return data, sr
@@ -51,9 +52,9 @@ class analyzer():
        data = {'f0': f, 
                'Time': time}
        
-       return data, f, time
+       return data, f, time, mask
     
-    def subProcess(self, subprocess_path): #Clean Signal 
+    def subProcess(self, subprocess_path, mask): #Clean Signal 
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
@@ -74,7 +75,8 @@ class analyzer():
                 ctr += 1 
             f.append(store)
         f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
-        
+        f = mask * f #Applying gate on the sub process
+
         if self.window is None:
             return np.array(f)
         else:
@@ -100,7 +102,7 @@ class analyzer():
         
         setFlag = []
         isOctave = []
-
+        tol = self.tolerance / 10
         #Setting a flag for unstable values and detecting octave differences
         for i in range(0, len(semi)-1):
             if semi[i] == float('nan'):
@@ -108,13 +110,13 @@ class analyzer():
             elif semi[i] == 0:
                 setFlag.append(0)
             elif semi[i+1] - semi[i] != semi[i]:
-                if semi[i] >= semi[i+1] * 0.95 and semi[i] <= semi[i+1] * 1.05:
+                if semi[i] >= semi[i+1] * (1 - tol) and semi[i] <= semi[i+1] * (1 + tol):
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
 
             #Checking for octave differences within bounds and check if there are values over an octave
-            if 0.95 * 12 <= semi[i] <= 1.05 * 12 or semi[i] > 12:
+            if (1 - tol) * 12 <= semi[i] <= (1 + tol) * 12 or semi[i] > 12:
                 isOctave.append(1)
             else:
                 isOctave.append(0)
@@ -132,6 +134,7 @@ class analyzer():
         return data, semi, setFlag, isOctave
     
     def plot(self, time, octave, clean=None, f=None, sub=None, dev=None, flags=None, isOctave=None):
+        
         #Scaling data and setting defaults so data can be plotted if other values are omitted   
         remFlags = False
         remOctave = False
@@ -215,12 +218,25 @@ class analyzer():
         plt.tight_layout()
         plt.show()
         
-    def spectrum(self, signal, sr):
-        pass
+    def spectrum(self, signal, sr, f):
+        bin = np.fft.fftfreq(signal.size, d=1/sr)
+        fft = np.fft.fft(signal)
+        mag = []
+        phase = []
+        for i in range(0, len(f)):
+            index = np.where(np.isclose(f[i], 
+                                         bin[i],
+                                         atol = self.tolerance)) 
+            mag = np.abs(fft[index])
+            phase = np.angle(fft[index])
+        
+        N = len(signal)
+        samples = np.arange(0, N)
+        print(len(samples), len(mag), len(phase))
 
 class writeData:
     def __init__(self):
-        self.self
+        pass
     
     def writeList(path, data):
         df = pd.DataFrame(data)
@@ -236,19 +252,22 @@ sub_file = 'sounds/SUB_COMBINED_total_silence.wav'
 test_output = 'freq.csv'
 dir_output = 'octave.csv'
 
-#Args: Averaging Window Wdith, Threshold for Gating, Hopsize. If None: Averaging and Gating can be skipped. 
+#Args: Averaging Window Wdith, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
-analyzer = analyzer(None, 10, 1)
+analyzer = analyzer(None, 20, 1, 5)
 #Args: File path
 octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
-sub_freq = analyzer.subProcess(sub_file)
 
 #Args: Data, Fs.
 #Clean
-clean_data, clean_freq, time = analyzer.getFreq(clean, sr)
+clean_data, clean_freq, time, clean_mask = analyzer.getFreq(clean, sr)
 #Dirt
-octave_data, octave_freq, time_octave = analyzer.getFreq(octave, sr)
+octave_data, octave_freq, time_octave, octave_mask = analyzer.getFreq(octave, sr)
+
+#Sub Combined File Processing
+#Args: File Path, Binary Mask
+sub_freq = analyzer.subProcess(sub_file, octave_mask)
 
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
@@ -257,3 +276,4 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
 analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+analyzer.spectrum(octave, sr, octave_freq)
