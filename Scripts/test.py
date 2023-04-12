@@ -3,34 +3,44 @@ import matplotlib.pyplot as plt
 import librosa 
 import pysptk as sp
 
-y, sr = librosa.load('sounds/segments/SUB_COMBINED.wav')
+signal, sr = librosa.load('sounds/segments/MAIN_OUT_SEGMENT.wav')
 
-WINDOW = 1024
-HOPSIZE = 512
+# Define the parameters
+window_size = 64          # Window size in samples
+hop_size = 16             # Hop size in samples
+frequencies = sp.swipe(signal, sr, hop_size, min=10, max=600, otype='f0')
 
-magnitude = []
-phase = []
+# Compute the STFT
+stft = librosa.stft(signal, n_fft=window_size, hop_length=hop_size)
 
-f = sp.swipe(y, sr, 512, min=10, max=600, otype='f0')
-freq = librosa.fft_frequencies(sr=sr, n_fft = WINDOW)
-yf = librosa.stft(y, hop_length=HOPSIZE, win_length=WINDOW)
-    
-for i in range(0, len(f)):
- 
-    index, = np.where(np.isclose(freq, f[i], atol=1/(1/sr * len(y))))
-    # Get magnitude and phases
-    magnitude.append(np.abs(yf[index]))
-    phase.append(np.angle(yf[index]))
+# Find the indices of the frequencies of interest in the frequency axis
+f = librosa.fft_frequencies(sr=len(signal), n_fft=window_size)
+freq_idxs = [np.argmin(np.abs(f - freq)) for freq in frequencies]
 
-total_length = (len(f) * HOPSIZE) * (1 / sr)
-time = np.arange(0, total_length, HOPSIZE * (1 / sr))
-print(len(time), np.shape(yf))
+# Extract the magnitude and phase information for the frequencies of interest
+magnitudes = np.abs(stft[freq_idxs, :])
+phases = np.angle(stft[freq_idxs, :])
 
-# Plot a spectrum 
-fig, ax = plt.subplots(2, sharex=True)
-ax[0].plot(time, magnitude) # in a conventional form
-ax[0].set_title("Magnitude")
-ax[1].plot(time, phase)
-ax[1].set_title("Phase")
+# Plot the signal, magnitude, and phase information
+fig, axs = plt.subplots(nrows=3, sharex=True)
+
+# Plot the signal
+axs[0].plot(np.linspace(0, 1, len(signal)), signal)
+axs[0].set_ylabel('Signal')
+
+# Plot the magnitude information
+axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[0, :])), sr=len(signal), hop_length=hop_size), magnitudes[0, :], label='{} Hz'.format(frequencies[0]))
+axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[1, :])), sr=len(signal), hop_length=hop_size), magnitudes[1, :], label='{} Hz'.format(frequencies[1]))
+axs[1].set_ylabel('Magnitude (log scale)')
+
+# Plot the phase information
+axs[2].plot(librosa.frames_to_time(np.arange(len(phases[0, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[0, :]), label='{} Hz'.format(frequencies[0]))
+axs[2].plot(librosa.frames_to_time(np.arange(len(phases[1, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[1, :]), label='{} Hz'.format(frequencies[1]))
+axs[2].set_ylim(-180, 180)
+axs[2].set_yticks(np.arange(-180, 181, 90))
+axs[2].set_ylabel('Phase (degrees)')
+
+axs[-1].set_xlabel('Time (s)')
+
 plt.grid()
 plt.show()
