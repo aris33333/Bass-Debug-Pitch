@@ -26,10 +26,10 @@ class analyzer():
 
     def getFreq(self, data, fs):
         
-       # Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
+       #Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
        non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
 
-       # Create a binary mask to nullify the silent parts
+       #Create a binary mask to nullify the silent parts
        mask = np.zeros_like(data, dtype=bool)
        for interval in non_silent_intervals:
             start = interval[0]
@@ -134,42 +134,6 @@ class analyzer():
         return data, semi, setFlag, isOctave
     
     def plot(self, time, octave, clean=None, f=None, sub=None, dev=None, flags=None, isOctave=None):
-        
-        #Scaling data and setting defaults so data can be plotted if other values are omitted   
-        remFlags = False
-        remOctave = False
-        remClean = False
-        remF = False
-        remDev = False
-        remSub = False
-        
-        if flags is None:
-            remFlags = True
-        else: 
-            for i in range(0, len(time)):
-                flags[i] = 10 + 10 * flags[i]
-                
-        if isOctave is None:
-            remOctave = True
-        else: 
-            for i in range(0, len(time)):
-                isOctave[i] = 10 + 10 * isOctave[i]
-                
-        if clean is None:
-            remClean = True
-        else: clean
-        
-        if sub is None:
-            remSub = True
-        else: sub
-            
-        if f is None:
-            remF = True
-        else: f
-        
-        if dev is None:
-            remDev = True
-        else: dev
             
         #Plotting frequency data and the audio clip for visualization
         fig, ax = plt.subplots(3, sharex=True)
@@ -180,27 +144,31 @@ class analyzer():
         ax[0].grid()
        
         legend = []
-        if not remF: 
+        if f is not None: 
             ax[1].plot(time, f) 
             legend.append("F0")
         else: pass
     
-        if not remDev: 
+        if dev is not None: 
             ax[1].plot(time, dev)
             legend.append("Deviation in Semitones")
         else: pass
         
-        if not remFlags:
+        if flags is not None:
+            for i in range(0, len(time)):
+                flags[i] = 10 + 10 * flags[i]
             ax[1].plot(time, flags)
             legend.append("Flags")
         else: pass
         
-        if not remOctave:
+        if isOctave is not None:
+            for i in range(0, len(time)):
+                isOctave[i] = 10 + 10 * isOctave[i]
             ax[1].plot(time, isOctave)
             legend.append("Octave and Greater Differences")
         else: pass
         
-        if not remSub:
+        if sub is not None:
             ax[1].plot(time, sub)
             legend.append("Sub Combined Frequency")
         else: pass
@@ -208,7 +176,7 @@ class analyzer():
         ax[1].set_title("Processed Correlation")
         ax[1].grid()
         
-        if not remClean: 
+        if clean is not None: 
             ax[2].plot(time, clean)
             ax[2].legend(["Clean Signal"], loc="upper right")
             ax[2].set_title("Clean Audio")
@@ -249,7 +217,7 @@ class analyzer():
         #Plot the magnitude information
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[0, :])), sr=len(signal), hop_length=hop_size), magnitudes[0, :], label='{} Hz'.format(frequencies[0]))
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[1, :])), sr=len(signal), hop_length=hop_size), magnitudes[1, :], label='{} Hz'.format(frequencies[1]))
-        axs[1].set_ylabel('Magnitude (log scale)')
+        axs[1].set_ylabel('Magnitude (log scale)')  
         axs[1].grid()
 
         #Plot the phase information
@@ -257,7 +225,7 @@ class analyzer():
         axs[2].plot(librosa.frames_to_time(np.arange(len(phases[1, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[1, :]), label='{} Hz'.format(frequencies[1]))
         axs[2].set_ylim(-180, 180)
         axs[2].set_yticks(np.arange(-180, 181, 90))
-        axs[2].set_ylabel('Phase (degrees)')
+        axs[2].set_ylabel('Phase (degrees)')        
         axs[2].grid()
 
         axs[-1].set_xlabel('Time (s)')
@@ -297,6 +265,7 @@ octave_data, octave_freq, time_octave, octave_mask = analyzer.getFreq(octave, sr
 
 #Sub Combined File Processing
 #Args: File Path, Binary Mask
+sub, sr = analyzer.getData(sub_file)
 sub_freq = analyzer.subProcess(sub_file, octave_mask)
 
 #Args: Clean Freq, Dirt Freq, Time
@@ -308,4 +277,4 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
 
 #Args: Signal Data, Sample Rate, WINDOW LENGTH, HOP SIZE
-analyzer.spectrum(octave, sr, 1024, 512, None)
+analyzer.spectrum(sub, sr, 32, 16, 3)

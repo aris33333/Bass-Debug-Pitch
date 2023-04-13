@@ -31,10 +31,10 @@ def detect_pitch(f, W, t, fs, bounds, thresh = 0.1):
             sample = np.argmin(CMNDF_vals) + bounds[0]
     return fs / sample
 
-fs, data = wavfile.read('sounds/MAIN_OUT_WET.wav')
+fs, data = wavfile.read('sounds/segments/MAIN_OUT_SEGMENT.wav')
 data = data.astype(np.float64)
-W = int(5 / 2000 * 44100)
-bounds = [20, 2000]
+W = int(5 / 2048 * fs)
+bounds = [10, 500]
 
 pitches = []
 
@@ -48,5 +48,5 @@ for i in range(data.shape[0] // (W + 3)):
         bounds
         )
     )
-    print(pitches)
 
+print(pitches)
