@@ -188,15 +188,14 @@ class analyzer():
         
     def spectrum(self, signal, sr, window_size, hop_size, args=None):
 
-        #Estimate Fundamental Frequencies
+        #Estimated Fundamental Frequencies
         frequencies = sp.swipe(signal, sr, hop_size, min=10, max=600, otype='f0')
 
         #Args for looking at other harmonics (Multiplies to F0)
         if args is None: frequencies
         else: frequencies *= args
 
-        #Compute the STFT
-        stft = librosa.stft(signal, n_fft=window_size, hop_length=hop_size)
+        stft = librosa.stft(signal, n_fft=window_size, hop_length=hop_size, center=False)
 
         #Find the indices of the frequencies of interest in the frequency axis
         f = librosa.fft_frequencies(sr=len(signal), n_fft=window_size)
@@ -206,21 +205,16 @@ class analyzer():
         magnitudes = np.abs(stft[freq_idxs, :])
         phases = np.angle(stft[freq_idxs, :])
 
-        #Plot the signal, magnitude, and phase information
         fig, axs = plt.subplots(nrows=3, sharex=True)
-
-        #Plot the signal
         axs[0].plot(np.linspace(0, 1, len(signal)), signal)
         axs[0].set_ylabel('Signal')
         axs[0].grid()
 
-        #Plot the magnitude information
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[0, :])), sr=len(signal), hop_length=hop_size), magnitudes[0, :], label='{} Hz'.format(frequencies[0]))
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[1, :])), sr=len(signal), hop_length=hop_size), magnitudes[1, :], label='{} Hz'.format(frequencies[1]))
         axs[1].set_ylabel('Magnitude (log scale)')  
         axs[1].grid()
 
-        #Plot the phase information
         axs[2].plot(librosa.frames_to_time(np.arange(len(phases[0, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[0, :]), label='{} Hz'.format(frequencies[0]))
         axs[2].plot(librosa.frames_to_time(np.arange(len(phases[1, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[1, :]), label='{} Hz'.format(frequencies[1]))
         axs[2].set_ylim(-180, 180)
@@ -274,7 +268,8 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+#analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
 
 #Args: Signal Data, Sample Rate, WINDOW LENGTH, HOP SIZE
-analyzer.spectrum(sub, sr, 32, 16, 3)
+analyzer.spectrum(sub, sr, 4096, 2048, None)
+
