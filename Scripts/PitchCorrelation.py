@@ -203,8 +203,7 @@ class analyzer():
         freq_idxs = [np.argmin(np.abs(f - freq)) for freq in frequencies]
 
         #Extract the magnitude and phase information for the frequencies of interest
-        magnitudes = (np.abs(stft[freq_idxs, :]))
-        magnitudes = 20 * np.log10(magnitudes)
+        magnitudes = np.abs(stft[freq_idxs, :])
         phases = np.angle(stft[freq_idxs, :])
 
         #Plot the signal, magnitude, and phase information
@@ -218,8 +217,7 @@ class analyzer():
         #Plot the magnitude information
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[0, :])), sr=len(signal), hop_length=hop_size), magnitudes[0, :], label='{} Hz'.format(frequencies[0]))
         axs[1].semilogy(librosa.frames_to_time(np.arange(len(magnitudes[1, :])), sr=len(signal), hop_length=hop_size), magnitudes[1, :], label='{} Hz'.format(frequencies[1]))
-        axs[1].set_ylabel('Magnitude (dB)')  
-        axs[1].set_ylim([10e-3, 10e2])
+        axs[1].set_ylabel('Magnitude (log scale)')  
         axs[1].grid()
 
         #Plot the phase information
@@ -227,7 +225,7 @@ class analyzer():
         axs[2].plot(librosa.frames_to_time(np.arange(len(phases[1, :])), sr=len(signal), hop_length=hop_size), np.degrees(phases[1, :]), label='{} Hz'.format(frequencies[1]))
         axs[2].set_ylim(-180, 180)
         axs[2].set_yticks(np.arange(-180, 181, 90))
-        axs[2].set_ylabel('Phase (Degrees)')        
+        axs[2].set_ylabel('Phase (degrees)')        
         axs[2].grid()
 
         axs[-1].set_xlabel('Time (s)')
@@ -254,7 +252,7 @@ dir_output = 'octave.csv'
 
 #Args: Averaging Window Wdith, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
-analyzer = analyzer(None, 20, 1, 10)
+analyzer = analyzer(None, 20, 1, 5)
 #Args: File path
 octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
@@ -276,7 +274,7 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-#analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
 
 #Args: Signal Data, Sample Rate, WINDOW LENGTH, HOP SIZE
-analyzer.spectrum(octave, sr, 32, 16, None)
+analyzer.spectrum(sub, sr, 32, 16, 3)
