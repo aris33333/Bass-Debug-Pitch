@@ -195,7 +195,7 @@ class analyzer():
         if args is None: frequencies
         else: frequencies *= args
 
-        stft = librosa.stft(signal, n_fft=window_size, hop_length=hop_size, center=False)
+        stft = librosa.stft(signal, n_fft=window_size, hop_length=hop_size, center=False, window='hann')
 
         #Find the indices of the frequencies of interest in the frequency axis
         f = librosa.fft_frequencies(sr=len(signal), n_fft=window_size)
@@ -271,5 +271,5 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 #analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
 
 #Args: Signal Data, Sample Rate, WINDOW LENGTH, HOP SIZE
-analyzer.spectrum(sub, sr, 4096, 2048, None)
+analyzer.spectrum(clean, sr, 4096, 256, None)
 

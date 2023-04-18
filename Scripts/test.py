@@ -2,7 +2,7 @@ import numpy as np
 import librosa
 import matplotlib.pyplot as plt
 
-audio_file, sr = librosa.load('sounds/segments/SUB_COMBINED.wav', sr=None)
+audio_file, sr = librosa.load('sounds/segments/LONG_NOTE.wav', sr=None)
 
 fft = np.fft.fft(audio_file)
 freqs = np.fft.fftfreq(len(audio_file), 1/sr)
