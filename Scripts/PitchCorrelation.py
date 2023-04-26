@@ -6,7 +6,7 @@ import subprocess
 import os
 import matplotlib.pyplot as plt
 
-class analyzer():       
+class analyzer:       
 
     def __init__(self, window=None, threshold=None, hopsize=None, tolerance=None):
         self.window = window
@@ -256,21 +256,28 @@ class writeData:
     def writeList(path, data):
         df = pd.DataFrame(data)
         df.to_csv(path)
-        
+
+############################ INIT ##############################
+
 #Paths
-#Audio
-clean_file = 'test'
+file = 'test'
 exe_path = 'exe/hybrid_octaver_batch_processor_fixed.exe'
-
-analyzer.runOctaver(exe_path, clean_file, None, False)
-
-octaver_file = f'sounds/clean/{clean_file}/MAIN_OUT_WET.wav'
-clean_file = f'souds/clean/{clean_file}.wav'
-sub_file = f'sounds/clean/{clean_file}/SUB_COMBINED_total_silence.wav'
+mode = 'fixed'
 
 #Args: Averaging Window Wdith, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
 analyzer = analyzer(None, 20, 1, 5)
+
+#Run Octaver exe and generate data
+analyzer.runOctaver(exe_path, file, None, False)
+
+#Audio
+clean_file = f'sounds/clean/{file}.wav'
+octaver_file = f'sounds/clean/processed_{mode}/{file}/MAIN_OUT.wav'
+sub_file = f'sounds/clean/processed_{mode}/{file}/SUB_COMBINED.wav'
+
+##################### MAIN PROCESSING ###########################
+
 #Args: File path
 octave, sr = analyzer.getData(octaver_file)
 clean, sr = analyzer.getData(clean_file)
