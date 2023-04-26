@@ -2,6 +2,8 @@ import numpy as np
 import librosa
 import pysptk as sp
 import pandas as pd
+import subprocess
+import os
 import matplotlib.pyplot as plt
 
 class analyzer():       
@@ -54,7 +56,8 @@ class analyzer():
        
        return data, f, time, mask
     
-    def subProcess(self, subprocess_path, mask): #Clean Signal 
+    def subProcess(self, subprocess_path, mask): 
+        #Clean Signal 
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
         data, fs = librosa.load(subprocess_path)
@@ -185,6 +188,26 @@ class analyzer():
 
         plt.tight_layout()
         plt.show()
+
+    def runOctaver(self, exe_path, filename, args, dryrun):
+        #Runs the batch processor executable with which runs the audio
+        #processing and creates audio files of all debug streams.
+
+        if not args:
+            args = ['1']
+        if '.wav' in filename:
+            raise Exception('Filenames should be given without file extensions')
+        # find executable based on our system
+        if not os.path.isfile(exe_path):
+            raise Exception(f'Executable not found: "{exe_path}"')
+        args = [exe_path, 'sounds/clean/', filename] + args 
+        print(' '.join(args))
+        if dryrun:
+            return
+        output = subprocess.run(args, capture_output=True)
+        if output.returncode != 0:
+            print(' '.join(output.args))
+            raise Exception(output.stderr)
         
     def spectrum(self, signal, sr, window_size, hop_size, args=None):
 
@@ -236,13 +259,14 @@ class writeData:
         
 #Paths
 #Audio
-clean_file = 'sounds/UIMX-855_total_silence.wav'
-octaver_file = 'sounds/MAIN_OUT_WET.wav'
-sub_file = 'sounds/SUB_COMBINED_total_silence.wav'
+clean_file = 'test'
+exe_path = 'exe/hybrid_octaver_batch_processor_fixed.exe'
 
-#CSV
-test_output = 'freq.csv'
-dir_output = 'octave.csv'
+analyzer.runOctaver(exe_path, clean_file, None, False)
+
+octaver_file = f'sounds/clean/{clean_file}/MAIN_OUT_WET.wav'
+clean_file = f'souds/clean/{clean_file}.wav'
+sub_file = f'sounds/clean/{clean_file}/SUB_COMBINED_total_silence.wav'
 
 #Args: Averaging Window Wdith, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
@@ -268,8 +292,4 @@ processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-#analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
-
-#Args: Signal Data, Sample Rate, WINDOW LENGTH, HOP SIZE
-analyzer.spectrum(clean, sr, 4096, 256, None)
-
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)

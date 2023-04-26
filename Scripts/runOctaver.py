@@ -13,7 +13,7 @@ def run_batch_processor_dry(exe_path, filename, args, dryrun):
   # find executable based on our system
   if not os.path.isfile(exe_path):
     raise Exception(f'Executable not found: "{exe_path}"')
-  args = [exe_path, 'samples/processed/', filename] + args 
+  args = [exe_path, 'sounds/clean/', filename] + args 
   print(' '.join(args))
   if dryrun:
     return
@@ -22,6 +22,6 @@ def run_batch_processor_dry(exe_path, filename, args, dryrun):
     print(' '.join(output.args))
     raise Exception(output.stderr)
   
-path = 'exe/'
-file = 'sounds/clean'
+path = 'exe/hybrid_octaver_batch_processor_fixed.exe'
+file = 'test'
 run_batch_processor_dry(path, file, None, False)
