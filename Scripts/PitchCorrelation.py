@@ -27,24 +27,25 @@ class analyzer:
             return np.array(subsampled), sr
 
     def getFreq(self, data, fs):
-        
-       #Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
-       non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
-
-       #Create a binary mask to nullify the silent parts
-       mask = np.zeros_like(data, dtype=bool)
-       for interval in non_silent_intervals:
-            start = interval[0]
-            end = interval[1]
-            mask[start:end] = True
-
        #Getting frequency values
        f = sp.swipe(data, fs, self.hopsize, min=10, max=600, otype='f0')
-       #Applying the mask
-       if self.threshold is not None:
-             f = f * mask
-       else: f
 
+       
+       if self.threshold is not None:
+            #Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
+            non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
+
+            #Create a binary mask to nullify the silent parts
+            mask = np.zeros_like(data, dtype=bool)
+            for interval in non_silent_intervals:
+                    start = interval[0]
+                    end = interval[1]
+                    mask[start:end] = True
+                    
+            #Applying the mask        
+            f = f * mask
+       else: mask = None
+      
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
        total_length = (len(f) * self.hopsize) * (1 / fs)
 
@@ -78,7 +79,10 @@ class analyzer:
                 ctr += 1 
             f.append(store)
         f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
-        f = mask * f #Applying gate on the sub process
+
+        if mask is not None: 
+            f = mask * f #Applying gate on the sub process
+        else: f
 
         if self.window is None:
             return np.array(f)
@@ -264,12 +268,12 @@ file = 'test'
 exe_path = 'exe/hybrid_octaver_batch_processor_fixed.exe'
 mode = 'fixed'
 
-#Args: Averaging Window Wdith, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
+#Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
-analyzer = analyzer(None, 20, 1, 5)
+analyzer = analyzer(None, None, 1, 10)
 
 #Run Octaver exe and generate data
-analyzer.runOctaver(exe_path, file, None, False)
+#analyzer.runOctaver(exe_path, file, None, False)
 
 #Audio
 clean_file = f'sounds/clean/{file}.wav'
@@ -295,8 +299,8 @@ sub_freq = analyzer.subProcess(sub_file, octave_mask)
 
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
-processor_data, dev, Flags, isOctave = analyzer.processDiff(clean_freq, octave_freq, time, True)
+processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_freq, time, True)
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, flags, isOctave)
