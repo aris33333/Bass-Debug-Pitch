@@ -263,9 +263,7 @@ class writeData:
 
 ############################ INIT ##############################
 
-#Paths
 file = 'test'
-exe_path = 'exe/hybrid_octaver_batch_processor_fixed.exe'
 mode = 'fixed'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
@@ -273,6 +271,7 @@ mode = 'fixed'
 analyzer = analyzer(None, None, 1, 10)
 
 #Run Octaver exe and generate data
+exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
 #analyzer.runOctaver(exe_path, file, None, False)
 
 #Audio
