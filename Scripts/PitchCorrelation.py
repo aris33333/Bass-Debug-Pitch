@@ -121,7 +121,6 @@ class analyzer:
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
-
             #Checking for octave differences within bounds and check if there are values over an octave
             if (1 - tol) * 12 <= semi[i] <= (1 + tol) * 12 or semi[i] > 12:
                 isOctave.append(1)
@@ -302,4 +301,4 @@ processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, flags, isOctave)
+analyzer.plot(time, octave, clean, octave_freq, None, dev, None, None)
