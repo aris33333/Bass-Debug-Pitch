@@ -154,3 +154,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Debug Audio Directories
+sounds/clean/open_strings/processed_chead
+sounds/clean/open_strings/processed_fixed
+sounds/clean/open_strings/processed_float
+

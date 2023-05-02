@@ -13,6 +13,7 @@ class analyzer:
         self.threshold = threshold
         self.hopsize = hopsize
         self.tolerance = tolerance
+        self.mask = 1
 
     def getData(self, path):
         data, sr = librosa.load(path)
@@ -30,21 +31,21 @@ class analyzer:
        #Getting frequency values
        f = sp.swipe(data, fs, self.hopsize, min=10, max=600, otype='f0')
 
-       
-       if self.threshold is not None:
+       if self.threshold is None: 
+           self.mask = 1
+       else: 
             #Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
             non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
 
             #Create a binary mask to nullify the silent parts
-            mask = np.zeros_like(data, dtype=bool)
+            self.mask = np.zeros_like(data, dtype=bool)
             for interval in non_silent_intervals:
-                    start = interval[0]
-                    end = interval[1]
-                    mask[start:end] = True
-                    
+                        start = interval[0]
+                        end = interval[1]
+                        self.mask[start:end] = True
+                
             #Applying the mask        
-            f = f * mask
-       else: mask = None
+            f = f * self.mask
       
        #Find total length by muliplying the window width with the size of the array and multiplying it with the sampling period
        total_length = (len(f) * self.hopsize) * (1 / fs)
@@ -55,9 +56,9 @@ class analyzer:
        data = {'f0': f, 
                'Time': time}
        
-       return data, f, time, mask
+       return data, f, time
     
-    def subProcess(self, subprocess_path, mask): 
+    def subProcess(self, subprocess_path): 
         #Clean Signal 
         #Subprocess method is the square waved signal output. Used to detect timbre changes and an alternative reference for pitch detection.
         #Shows up as an abrupt period change, which reflects in the fundamental frequency.  
@@ -79,10 +80,11 @@ class analyzer:
                 ctr += 1 
             f.append(store)
         f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
-
-        if mask is not None: 
-            f = mask * f #Applying gate on the sub process
-        else: f
+        
+        if self.threshold is None: 
+            f
+        else: 
+            f = self.mask * f #Applying gate on the sub process
 
         if self.window is None:
             return np.array(f)
@@ -192,7 +194,7 @@ class analyzer:
         plt.tight_layout()
         plt.show()
 
-    def runOctaver(self, exe_path, filename, args, dryrun):
+    def runOctaver(self, exe_path, folder, filename, args, dryrun):
         #Runs the batch processor executable with which runs the audio
         #processing and creates audio files of all debug streams.
 
@@ -203,7 +205,7 @@ class analyzer:
         # find executable based on our system
         if not os.path.isfile(exe_path):
             raise Exception(f'Executable not found: "{exe_path}"')
-        args = [exe_path, 'sounds/clean/', filename] + args 
+        args = [exe_path, f'sounds/clean/{folder}/', filename] + args 
         print(' '.join(args))
         if dryrun:
             return
@@ -262,8 +264,9 @@ class writeData:
 
 ############################ INIT ##############################
 
-file = 'test'
+file = 'PIEZO'
 mode = 'fixed'
+folder = 'open_strings'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
@@ -271,12 +274,12 @@ analyzer = analyzer(None, None, 1, 10)
 
 #Run Octaver exe and generate data
 exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
-#analyzer.runOctaver(exe_path, file, None, False)
+analyzer.runOctaver(exe_path, folder, file, None, False)
 
 #Audio
-clean_file = f'sounds/clean/{file}.wav'
-octaver_file = f'sounds/clean/processed_{mode}/{file}/MAIN_OUT.wav'
-sub_file = f'sounds/clean/processed_{mode}/{file}/SUB_COMBINED.wav'
+clean_file = f'sounds/clean/{folder}/{file}.wav'
+octaver_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
+sub_file = f'sounds/clean/{folder}/processed_{mode}/{file}/SUB_COMBINED.wav'
 
 ##################### MAIN PROCESSING ###########################
 
@@ -286,14 +289,14 @@ clean, sr = analyzer.getData(clean_file)
 
 #Args: Data, Fs.
 #Clean
-clean_data, clean_freq, time, clean_mask = analyzer.getFreq(clean, sr)
+clean_data, clean_freq, time = analyzer.getFreq(clean, sr)
 #Dirt
-octave_data, octave_freq, time_octave, octave_mask = analyzer.getFreq(octave, sr)
+octave_data, octave_freq, time_octave = analyzer.getFreq(octave, sr)
 
 #Sub Combined File Processing
 #Args: File Path, Binary Mask
 sub, sr = analyzer.getData(sub_file)
-sub_freq = analyzer.subProcess(sub_file, octave_mask)
+sub_freq = analyzer.subProcess(sub_file)
 
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
@@ -301,4 +304,4 @@ processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, None, dev, None, None)
+analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, None, None)
