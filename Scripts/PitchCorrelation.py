@@ -274,7 +274,7 @@ analyzer = analyzer(None, None, 1, 10)
 
 #Run Octaver exe and generate data
 exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
-analyzer.runOctaver(exe_path, folder, file, None, False)
+#analyzer.runOctaver(exe_path, folder, file, None, False)
 
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
