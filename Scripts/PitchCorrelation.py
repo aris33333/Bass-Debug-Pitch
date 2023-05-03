@@ -265,8 +265,8 @@ class writeData:
 ############################ INIT ##############################
 
 file = 'COIL_HUMBUCKER'
-mode = 'float'
-folder = 'open_strings'
+mode = 'fixed'
+folder = 'multi_notes'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
