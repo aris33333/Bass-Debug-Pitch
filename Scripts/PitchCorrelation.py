@@ -13,7 +13,7 @@ class analyzer:
         self.threshold = threshold
         self.hopsize = hopsize
         self.tolerance = tolerance
-        self.mask = 1
+        self.mask = 0
 
     def getData(self, path):
         data, sr = librosa.load(path)
@@ -32,7 +32,7 @@ class analyzer:
        f = sp.swipe(data, fs, self.hopsize, min=10, max=600, otype='f0')
 
        if self.threshold is None: 
-           self.mask = 1
+            pass
        else: 
             #Compute the non-silent intervals (i.e., the intervals where the signal is above a certain threshold)
             non_silent_intervals = librosa.effects.split(data, top_db=self.threshold)
@@ -82,7 +82,7 @@ class analyzer:
         f.append(f[len(f)-1]) #Since the sub file is being read from the 2nd element, it has one less elment. 
         
         if self.threshold is None: 
-            f
+            pass
         else: 
             f = self.mask * f #Applying gate on the sub process
 
@@ -119,15 +119,15 @@ class analyzer:
             elif semi[i] == 0:
                 setFlag.append(0)
             elif semi[i+1] - semi[i] != semi[i]:
-                if semi[i] >= semi[i+1] * (1 - tol) and semi[i] <= semi[i+1] * (1 + tol):
+                if semi[i] >= semi[i+1] * (1 - tol) or semi[i] <= semi[i+1] * (1 + tol):
                     setFlag.append(1) 
                 else:
                     setFlag.append(0)
             #Checking for octave differences within bounds and check if there are values over an octave
-            if (1 - tol) * 12 <= semi[i] <= (1 + tol) * 12 or semi[i] > 12:
-                isOctave.append(1)
-            else:
+            if (1 - tol) * 12 >= semi[i] or (1 + tol) * 12 <= semi[i] or semi[i] > 12:
                 isOctave.append(0)
+            else:
+                isOctave.append(1)
         setFlag.append(-1) #Ignoring last value
         isOctave.append(0) #Ignoring last value
         
@@ -264,17 +264,17 @@ class writeData:
 
 ############################ INIT ##############################
 
-file = 'PIEZO'
-mode = 'fixed'
+file = 'COIL_HUMBUCKER'
+mode = 'float'
 folder = 'open_strings'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
-analyzer = analyzer(None, None, 1, 10)
+analyzer = analyzer(None, None, 1, 5)
 
 #Run Octaver exe and generate data
 exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
-#analyzer.runOctaver(exe_path, folder, file, None, False)
+analyzer.runOctaver(exe_path, folder, file, False, False)
 
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
@@ -304,4 +304,4 @@ processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, dev, None, None)
+analyzer.plot(time, octave, clean, None, None, dev, flags, isOctave)
