@@ -67,7 +67,8 @@ class analyzer:
         f = []
         store = 0
         
-        #When a product of a sample is negative then the signal must have a sign change, which is when the counter (number of samples before sign change) is reset to 0 and a new count starts.
+        #When a product of a sample is negative then the signal must have a sign change,
+        #which is when the counter (number of samples before sign change) is reset to 0 and a new count starts.
         #Dividing it with the sampling frequency gives the estimated fundamental frequency.
         for j in range(1, len(data)):
             if (data[j] * data[j-1] < 0):
@@ -263,7 +264,6 @@ class writeData:
         df.to_csv(path)
 
 ############################ INIT ##############################
-
 file = 'COIL_HUMBUCKER'
 mode = 'fixed'
 folder = 'multi_notes'
