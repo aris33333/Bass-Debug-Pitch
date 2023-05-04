@@ -266,7 +266,7 @@ class writeData:
 ############################ INIT ##############################
 file = 'COIL_HUMBUCKER'
 mode = 'fixed'
-folder = 'multi_notes'
+folder = 'open_strings'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
@@ -304,4 +304,4 @@ processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_f
 
 #Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, None, None, dev, flags, isOctave)
+#analyzer.plot(time, octave, clean, None, None, dev, flags, isOctave)
