@@ -131,7 +131,7 @@ class analyzer:
                 isOctave.append(1)
         setFlag.append(-1) #Ignoring last value
         isOctave.append(0) #Ignoring last value
-        
+
         data = {'Time': time, 
                 'Clean': clean, 
                 'Dirt': dirt, 
@@ -154,7 +154,7 @@ class analyzer:
         legend = []
         if f is not None: 
             ax[1].plot(time, f) 
-            legend.append("F0")
+            legend.append("Processed F0")
         else: pass
     
         if dev is not None: 
@@ -178,7 +178,7 @@ class analyzer:
         
         if sub is not None:
             ax[1].plot(time, sub)
-            legend.append("Sub Combined Frequency")
+            legend.append("Clean F0/Sub Combined Frequency")
         else: pass
         ax[1].legend(legend, loc = "upper right")
         ax[1].set_title("Processed Correlation")
@@ -262,13 +262,13 @@ class writeData:
         df.to_csv(path)
 
 ############################ INIT ###############################
-file = 'COIL_HUMBUCKER2'
-mode = 'chead'
-folder = 'multi_notes'
+file = 'COIL_HUMBUCKER'
+mode = 'fixed'
+folder = 'repeat'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
-analyzer = analyzer(None, None, 1, 5)
+analyzer = analyzer(None, 20, 1, 5)
 
 #Run Octaver exe and generate data
 #exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
@@ -276,30 +276,30 @@ analyzer = analyzer(None, None, 1, 5)
 
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
-octaver_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
+processed_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
 sub_file = f'sounds/clean/{folder}/processed_{mode}/{file}/SUB_COMBINED.wav'
 
 ##################### MAIN PROCESSING ###########################
 
 #Args: File path
-octave, sr = analyzer.getData(octaver_file)
+prc, sr = analyzer.getData(processed_file)
 clean, sr = analyzer.getData(clean_file)
 
 #Args: Data, Fs.
 #Clean
 clean_data, clean_freq, time = analyzer.getFreq(clean, sr)
 #Dirt
-octave_data, octave_freq, time_octave = analyzer.getFreq(octave, sr)
+prc_data, prc_freq, time_octave = analyzer.getFreq(prc, sr)
 
 #Sub Combined File Processing
-#Args: File Path, Binary Mask
+#Args: File Path
 sub, sr = analyzer.getData(sub_file)
 sub_freq = analyzer.subProcess(sub_file)
 
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
-processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_freq, time, True)
+processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, prc_freq, time, True)
 
-#Args: Time, Processed Signal, Clean, F0, Sub Process Freq, Deviation, Flags, Octave Errors. 
+#Args: Time, Processed Signal, Clean, F0-2, F0-2, Deviations, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+analyzer.plot(time, prc, clean, None, None, dev, flags, isOctave)
