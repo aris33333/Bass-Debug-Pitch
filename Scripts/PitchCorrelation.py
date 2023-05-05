@@ -149,6 +149,7 @@ class analyzer:
         fig.suptitle("Data Correlation")
         ax[0].plot(time, octave)
         ax[0].set_title("Processed Signal")
+        ax[0].legend(["Octave Signal"], loc = "upper right")
         ax[0].grid()
        
         legend = []
@@ -186,7 +187,8 @@ class analyzer:
         
         if clean is not None: 
             ax[2].plot(time, clean)
-            ax[2].set_title("Clean Signal")
+            ax[2].legend(["Clean Signal"], loc="upper right")
+            ax[2].set_title("Clean Audio")
             ax[2].grid()
         else: ax[2].set_visible(False)
 
@@ -261,18 +263,18 @@ class writeData:
         df = pd.DataFrame(data)
         df.to_csv(path)
 
-############################ INIT ###############################
-file = 'COIL_HUMBUCKER2'
-mode = 'chead'
-folder = 'multi_notes'
+############################ INIT ##############################
+file = 'COIL_HUMBUCKER'
+mode = 'fixed'
+folder = 'open_strings'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
 analyzer = analyzer(None, None, 1, 5)
 
 #Run Octaver exe and generate data
-#exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
-#analyzer.runOctaver(exe_path, folder, file, False, False)
+exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
+analyzer.runOctaver(exe_path, folder, file, False, False)
 
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
@@ -300,6 +302,6 @@ sub_freq = analyzer.subProcess(sub_file)
 #True = OCTAVER, False = SYNTH
 processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, octave_freq, time, True)
 
-#Args: Time, Processed Signal, Clean, F0, Sub Process Freq, Deviation, Flags, Octave Errors. 
+#Args: Time, Processed Signal, Clean, Processed Frequency, Sub Process Freq, Deviation, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, octave, clean, octave_freq, sub_freq, None, None, None)
+#analyzer.plot(time, octave, clean, None, None, dev, flags, isOctave)
