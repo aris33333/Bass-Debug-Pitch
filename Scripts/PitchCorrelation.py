@@ -15,12 +15,12 @@ class analyzer:
         self.tolerance = tolerance
         self.mask = 0
 
-    def getData(self, path):
-        data, sr = librosa.load(path)
+    def getData(self, path, args):
+        data, sr = librosa.load(path, sr = 48000)
 
         #Audio can be subsampled, by avereraging it with a window width of W
         subsampled = []
-        if self.window is None:
+        if args is False:
             return data, sr
         else:
             for i in range(0, len(data), self.window):
@@ -262,9 +262,9 @@ class writeData:
         df.to_csv(path)
 
 ############################ INIT ###############################
-file = 'COIL_HUMBUCKER'
-mode = 'fixed'
-folder = 'repeat'
+file = 'PIEZO'
+mode = 'SYNTH'
+folder = 'open_strings'
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
@@ -276,14 +276,17 @@ analyzer = analyzer(None, 20, 1, 5)
 
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
-processed_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
-sub_file = f'sounds/clean/{folder}/processed_{mode}/{file}/SUB_COMBINED.wav'
+if mode == 'SYNTH':
+    processed_file = f'sounds/clean/{folder}/{file}_{mode}.wav'
+else:
+    processed_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
+#sub_file = f'sounds/clean/{folder}/processed_{mode}/{file}/SUB_COMBINED.wav'
 
 ##################### MAIN PROCESSING ###########################
 
 #Args: File path
-prc, sr = analyzer.getData(processed_file)
-clean, sr = analyzer.getData(clean_file)
+prc, sr = analyzer.getData(processed_file, False)
+clean, sr = analyzer.getData(clean_file, False)
 
 #Args: Data, Fs.
 #Clean
@@ -293,13 +296,13 @@ prc_data, prc_freq, time_octave = analyzer.getFreq(prc, sr)
 
 #Sub Combined File Processing
 #Args: File Path
-sub, sr = analyzer.getData(sub_file)
-sub_freq = analyzer.subProcess(sub_file)
+#sub, sr = analyzer.getData(sub_file)
+#sub_freq = analyzer.subProcess(sub_file)
 
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
-processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, prc_freq, time, True)
+processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, prc_freq, time, False)
 
-#Args: Time, Processed Signal, Clean, F0-2, F0-2, Deviations, Flags, Octave Errors. 
+#Args: Time, Processed Signal, Clean, F0-1, F0-2, Deviations, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, prc, clean, None, None, dev, flags, isOctave)
+analyzer.plot(time, prc, clean, prc_freq, clean_freq, dev, flags, isOctave)
