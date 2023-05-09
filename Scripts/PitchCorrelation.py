@@ -262,7 +262,7 @@ class writeData:
         df.to_csv(path)
 
 ############################ INIT ###############################
-file = 'COIL_HUMBUCKER'
+file = 'PIEZO'
 arg = 'SYNTH'
 folder = 'open_strings'
 runOC = False
