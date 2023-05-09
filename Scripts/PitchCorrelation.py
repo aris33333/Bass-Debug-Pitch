@@ -15,12 +15,12 @@ class analyzer:
         self.tolerance = tolerance
         self.mask = 0
 
-    def getData(self, path, args):
+    def getData(self, path):
         data, sr = librosa.load(path, sr = 48000)
 
         #Audio can be subsampled, by avereraging it with a window width of W
         subsampled = []
-        if args is False:
+        if self.window is None:
             return data, sr
         else:
             for i in range(0, len(data), self.window):
@@ -262,31 +262,40 @@ class writeData:
         df.to_csv(path)
 
 ############################ INIT ###############################
-file = 'PIEZO'
-mode = 'SYNTH'
+file = 'COIL_HUMBUCKER'
+arg = 'SYNTH'
 folder = 'open_strings'
+runOC = False
 
 #Args: Averaging Window Width, Threshold for Gating, Hopsize, Tolerance. If None: Averaging and Gating can be skipped. 
 #Init Object
 analyzer = analyzer(None, 20, 1, 5)
 
-#Run Octaver exe and generate data
-#exe_path = f'exe/hybrid_octaver_batch_processor_{mode}.exe'
-#analyzer.runOctaver(exe_path, folder, file, False, False)
-
 #Audio
 clean_file = f'sounds/clean/{folder}/{file}.wav'
-if mode == 'SYNTH':
-    processed_file = f'sounds/clean/{folder}/{file}_{mode}.wav'
+
+#Mode for Processed File Paths
+if arg == 'SYNTH':
+    processed_file = f'sounds/clean/{folder}/{file}_{arg}.wav'
+    mode = False
 else:
-    processed_file = f'sounds/clean/{folder}/processed_{mode}/{file}/MAIN_OUT.wav'
-#sub_file = f'sounds/clean/{folder}/processed_{mode}/{file}/SUB_COMBINED.wav'
+    processed_file = f'sounds/clean/{folder}/processed_{arg}/{file}/MAIN_OUT.wav'
+    sub_file = f'sounds/clean/{folder}/processed_{arg}/{file}/SUB_COMBINED.wav'
+    #Sub Combined File Processing
+    #Args: File Path
+    sub, sr = analyzer.getData(sub_file)
+    sub_freq = analyzer.subProcess(sub_file)
+    mode = True
+    if runOC == True:
+        #Run Octaver exe and generate data
+        exe_path = f'exe/hybrid_octaver_batch_processor_{arg}.exe'
+        analyzer.runOctaver(exe_path, folder, file, False, False)
 
 ##################### MAIN PROCESSING ###########################
 
 #Args: File path
-prc, sr = analyzer.getData(processed_file, False)
-clean, sr = analyzer.getData(clean_file, False)
+prc, sr = analyzer.getData(processed_file)
+clean, sr = analyzer.getData(clean_file)
 
 #Args: Data, Fs.
 #Clean
@@ -294,15 +303,10 @@ clean_data, clean_freq, time = analyzer.getFreq(clean, sr)
 #Dirt
 prc_data, prc_freq, time_octave = analyzer.getFreq(prc, sr)
 
-#Sub Combined File Processing
-#Args: File Path
-#sub, sr = analyzer.getData(sub_file)
-#sub_freq = analyzer.subProcess(sub_file)
-
 #Args: Clean Freq, Dirt Freq, Time
 #True = OCTAVER, False = SYNTH
-processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, prc_freq, time, False)
+processor_data, dev, flags, isOctave = analyzer.processDiff(clean_freq, prc_freq, time, mode)
 
 #Args: Time, Processed Signal, Clean, F0-1, F0-2, Deviations, Flags, Octave Errors. 
 #Use None for omitting data (cannot omit Processed Audio and Time).
-analyzer.plot(time, prc, clean, prc_freq, clean_freq, dev, flags, isOctave)
+analyzer.plot(time, prc, clean, None, None, dev, flags, isOctave)
